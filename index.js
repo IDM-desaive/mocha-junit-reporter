@@ -341,6 +341,17 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
   if (this._options.outputs && (test.consoleOutputs && test.consoleOutputs.length > 0)) {
     systemOutLines = systemOutLines.concat(test.consoleOutputs);
   }
+  if (this._options.attachments && test.context) {
+    if (Array.isArray(test.context)) {
+      for (const ctx of test.context) {
+        if (typeof ctx === 'string') {
+          systemOutLines = systemOutLines.concat(`[[ATTACHMENT|${ctx}]]`);
+        }
+      }
+    } else if (typeof test.context === 'string') {
+      systemOutLines = systemOutLines.concat(`[[ATTACHMENT|${test.context}]]`);
+    }
+  }
   if (this._options.attachments && test.attachments && test.attachments.length > 0) {
     systemOutLines = systemOutLines.concat(test.attachments.map(
       function (file) {
