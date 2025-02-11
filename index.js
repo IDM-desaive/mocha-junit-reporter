@@ -130,7 +130,7 @@ function getSetting(value, key, defaultVal, transform) {
 
 function defaultSuiteTitle(suite) {
   if (suite.root && suite.title === '') {
-      return stripAnsi(this._options.rootSuiteTitle);
+    return stripAnsi(this._options.rootSuiteTitle);
   }
   return stripAnsi(suite.title);
 }
@@ -250,6 +250,40 @@ function MochaJUnitReporter(runner, options) {
   };
 
   this._runner.on('suite end', function(suite) {
+    suite.suites.forEach(it => {
+      if (it.tests) {
+        for (const test of it.tests) {
+          if (test.uuid && test.context && this._options.attachments) {
+            let systemOutLines = [];
+            if (Array.isArray(test.context)) {
+              for (const ctx of test.context) {
+                if (typeof ctx === 'string') {
+                  systemOutLines = systemOutLines.concat(`[[ATTACHMENT|${ctx}]]`);
+                }
+              }
+            } else if (typeof test.context === 'string') {
+              systemOutLines = systemOutLines.concat(`[[ATTACHMENT|${test.context}]]`);
+            }
+            if (systemOutLines.length > 0) {
+              for (const s of lastSuite()) {
+                if (!s.testcase) {
+                  continue;
+                }
+                for (const t of s.testcase) {
+                  if (t._attr && t._attr.uuid === test.uuid) {
+                    let prevOutput = ''
+                    if (s.testcase['system-out']) {
+                      prevOutput = s.testcase['system-out'] + '\n';
+                    }
+                    s.testcase.push({'system-out': prevOutput + this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
     // allow tests to mock _onSuiteEnd
     return this._onSuiteEnd(suite);
   }.bind(this));
@@ -330,7 +364,8 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
       _attr: {
         name: flipClassAndName ? classname : name,
         time: (typeof test.duration === 'undefined') ? 0 : test.duration / 1000,
-        classname: flipClassAndName ? name : classname
+        classname: flipClassAndName ? name : classname,
+        uuid: test.uuid,
       }
     }]
   };
@@ -378,10 +413,10 @@ MochaJUnitReporter.prototype.getTestcaseData = function(test, err) {
     }
     var failureMessage = err.stack || message;
     if (!Base.hideDiff && err.expected !== undefined) {
-        var oldUseColors = Base.useColors;
-        Base.useColors = false;
-        failureMessage += "\n" + Base.generateDiff(err.actual, err.expected);
-        Base.useColors = oldUseColors;
+      var oldUseColors = Base.useColors;
+      Base.useColors = false;
+      failureMessage += "\n" + Base.generateDiff(err.actual, err.expected);
+      Base.useColors = oldUseColors;
     }
     var failureElement = {
       _attr: {
@@ -541,9 +576,9 @@ MochaJUnitReporter.prototype.writeXmlToDisk = function(xml, filePath){
     mkdirp.sync(path.dirname(filePath));
 
     try {
-        fs.writeFileSync(filePath, xml, 'utf-8');
+      fs.writeFileSync(filePath, xml, 'utf-8');
     } catch (exc) {
-        debug('problem writing results: ' + exc);
+      debug('problem writing results: ' + exc);
     }
     debug('results written successfully');
   }
