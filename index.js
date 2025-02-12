@@ -258,11 +258,11 @@ function MochaJUnitReporter(runner, options) {
             if (Array.isArray(test.context)) {
               for (const ctx of test.context) {
                 if (typeof ctx === 'string') {
-                  systemOutLines = systemOutLines.concat(`[[ATTACHMENT|${ctx}]]`);
+                  systemOutLines = systemOutLines.concat(`\n[[ATTACHMENT|${ctx}]]\n`);
                 }
               }
             } else if (typeof test.context === 'string') {
-              systemOutLines = systemOutLines.concat(`[[ATTACHMENT|${test.context}]]`);
+              systemOutLines = systemOutLines.concat(`\n[[ATTACHMENT|${test.context}]]\n`);
             }
             if (systemOutLines.length > 0) {
               for (const s of lastSuite()) {
@@ -271,9 +271,9 @@ function MochaJUnitReporter(runner, options) {
                 }
                 for (const t of s.testcase) {
                   if (t._attr && t._attr.uuid === test.uuid) {
-                    let prevOutput = ''
+                    let prevOutput = '';
                     if (s.testcase['system-out']) {
-                      prevOutput = s.testcase['system-out'] + '\n';
+                      prevOutput = s.testcase['system-out'];
                     }
                     s.testcase.push({'system-out': prevOutput + this.removeInvalidCharacters(stripAnsi(systemOutLines.join('\n')))});
                   }
